@@ -1,0 +1,109 @@
+// ==========================================================================
+// Prisma Schema Definition (prisma/schema.prisma)
+// ==========================================================================
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  STUDENT
+  ALUMNI
+  FACULTY
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  username     String    @unique // Unique username index for routing
+  passwordHash String
+  name         String
+  role         Role      @default(STUDENT)
+  isVerified   Boolean   @default(false) // Used to track Alumni verification status
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  profile      Profile?
+  posts        Post[]
+  jobs         Job[]     @relation("JobCreator")
+  applications JobApplication[]
+  verificationsSubmitted AlumniVerificationRequest[] @relation("AlumniUser")
+  verificationsReviewed  AlumniVerificationRequest[] @relation("FacultyReviewer")
+}
+
+model Profile {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bio            String?
+  graduationYear Int?
+  department     String?  // CSE, ECE, ME, etc.
+  company        String?  // Current organization (Alumni specific)
+  jobTitle       String?  // Current title (Alumni specific)
+  skills         String[]
+  achievements   String[] // List of achievements / certifications
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
+  tag       String?  // "Achievement", "JobOpportunity", "General"
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Job {
+  id           String           @id @default(uuid())
+  creatorId    String
+  creator      User             @relation("JobCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  title        String
+  company      String
+  description  String
+  requirements String
+  location     String
+  salaryRange  String?
+  jobType      String           // "Full-time", "Internship"
+  workMode     String           // "Remote", "On-site", "Hybrid"
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  applications JobApplication[]
+}
+
+model JobApplication {
+  id          String   @id @default(uuid())
+  jobId       String
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  resumeUrl   String?
+  coverLetter String?
+  createdAt   DateTime @default(now())
+}
+
+model AlumniVerificationRequest {
+  id         String             @id @default(uuid())
+  alumniId   String
+  alumni     User               @relation("AlumniUser", fields: [alumniId], references: [id], onDelete: Cascade)
+  facultyId  String?            // Nullable until a faculty claims the request
+  faculty    User?              @relation("FacultyReviewer", fields: [facultyId], references: [id])
+  status     VerificationStatus @default(PENDING)
+  notes      String?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+}
