@@ -1,28 +1,35 @@
-'use client';
+"use client";
 
-import React, { useState, useRef } from 'react';
-import { mockStore } from '@/lib/mock-store';
-import { Image as ImageIcon, Send, Sparkles, AlertCircle, X } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import React, { useState, useRef } from "react";
+import Image from "next/image";
+import { mockStore } from "@/lib/mock-store";
+import {
+  Image as ImageIcon,
+  Send,
+  Sparkles,
+  AlertCircle,
+  X,
+} from "lucide-react";
+import confetti from "canvas-confetti";
 
 interface PostCreatorProps {
   onPostCreated: () => void;
 }
 
 const CATEGORIES = [
-  'General 💬',
-  'Achievement 🎉',
-  'Project Update 🚀',
-  'Work Opportunity 💼',
-  'College Event 🏫'
+  "General 💬",
+  "Achievement 🎉",
+  "Project Update 🚀",
+  "Work Opportunity 💼",
+  "College Event 🏫",
 ];
 
 export default function PostCreator({ onPostCreated }: PostCreatorProps) {
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageUrl, setImageUrl] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentUser = mockStore.getCurrentUser();
@@ -39,46 +46,47 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
 
   const clearImage = () => {
     setImagePreview(null);
-    setImageUrl('');
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    setImageUrl("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handlePostSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) {
-      setError('Post content cannot be empty.');
+      setError("Post content cannot be empty.");
       return;
     }
 
     try {
       mockStore.createPost(currentUser.id, content, category, imageUrl);
-      
+
       // If it is an achievement, trigger a beautiful confetti burst!
-      if (category.includes('Achievement')) {
+      if (category.includes("Achievement")) {
         confetti({
           particleCount: 100,
           spread: 70,
-          origin: { y: 0.6 }
+          origin: { y: 0.6 },
         });
       }
 
       // Reset Form
-      setContent('');
+      setContent("");
       setCategory(CATEGORIES[0]);
       clearImage();
-      setError('');
-      
+      setError("");
+
       // Callback to refresh feed
       onPostCreated();
-    } catch (err: any) {
-      setError(err.message || 'Failed to create post.');
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to create post.";
+      setError(message);
     }
   };
 
   return (
     <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4 shadow-sm hover:shadow-md transition-shadow">
       <form onSubmit={handlePostSubmit} className="flex flex-col gap-4">
-        
         {/* Input area */}
         <div className="flex gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-emerald-500 flex items-center justify-center text-white font-extrabold shadow-inner flex-shrink-0 uppercase">
@@ -106,10 +114,12 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
         {/* Local Image Preview */}
         {imagePreview && (
           <div className="relative rounded-xl overflow-hidden border border-[var(--border-color)] max-h-60 bg-[var(--bg-tertiary)] flex items-center justify-center">
-            <img 
-              src={imagePreview} 
-              alt="Attachment preview" 
+            <Image
+              src={imagePreview}
+              alt="Attachment preview"
               className="object-contain max-h-60 w-full"
+              width={500}
+              height={300}
             />
             <button
               type="button"
@@ -135,12 +145,12 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
               <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
               <span>Add Image</span>
             </button>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleImageChange} 
-              accept="image/*" 
-              className="hidden" 
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageChange}
+              accept="image/*"
+              className="hidden"
             />
 
             {/* Category dropdown */}
@@ -152,7 +162,11 @@ export default function PostCreator({ onPostCreated }: PostCreatorProps) {
                 className="bg-transparent outline-none cursor-pointer text-[var(--text-primary)]"
               >
                 {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat} className="bg-[var(--bg-secondary)] text-[var(--text-primary)]">
+                  <option
+                    key={cat}
+                    value={cat}
+                    className="bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+                  >
                     {cat}
                   </option>
                 ))}
